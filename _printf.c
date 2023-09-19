@@ -1,53 +1,66 @@
 #include "main.h"
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
+
+void print_buffer(char buffer[], int *buff_ind);
+
 /**
- * _printf - creates a custom printf
- * @format: a formated input
- * @...: variable argument
- * Return: number of characters in format(on success)
-*/
+ * _printf - Printf function
+ * @format: format.
+ * Return: Printed chars.
+ */
 int _printf(const char *format, ...)
 {
-int char_print = 0;
-va_list list_arg;
-if (format == NULL)
-return (-1);
-va_start(list_arg, format);
-while (*format)
-{
-if (*format == '%')
-{
-format++;
-if (*format == '\0')
-break;
-if (*format == '%')
-{
-write(1, format, 1);
-char_print++;
+	int i, printed = 0, printed_chars = 0;
+	int flags, width, precision, size, buff_ind = 0;
+	va_list list;
+	char buffer[BUFF_SIZE];
+
+	if (format == NULL)
+		return (-1);
+
+	va_start(list, format);
+
+	for (i = 0; format && format[i] != '\0'; i++)
+	{
+		if (format[i] != '%')
+		{
+			buffer[buff_ind++] = format[i];
+			if (buff_ind == BUFF_SIZE)
+				print_buffer(buffer, &buff_ind);
+			/* write(1, &format[i], 1);*/
+			printed_chars++;
+		}
+		else
+		{
+			print_buffer(buffer, &buff_ind);
+			flags = get_flags(format, &i);
+			width = get_width(format, &i, list);
+			precision = get_precision(format, &i, list);
+			size = get_size(format, &i);
+			++i;
+			printed = handle_print(format, &i, list, buffer,
+				flags, width, precision, size);
+			if (printed == -1)
+				return (-1);
+			printed_chars += printed;
+		}
+	}
+
+	print_buffer(buffer, &buff_ind);
+
+	va_end(list);
+
+	return (printed_chars);
 }
-else if (*format == 'c')
+
+/**
+ * print_buffer - Prints the contents of the buffer if it exist
+ * @buffer: Array of chars
+ * @buff_ind: Index at which to add next char, represents the length.
+ */
+void print_buffer(char buffer[], int *buff_ind)
 {
-char c = va_arg(list_arg, int);
-write(1, &c, 1);
-char_print++;
-}
-else if (*format == 's')
-{
-char *word = va_arg(list_arg, char*);
-int word_len = 0;
-while (word[word_len] != '\0')
-{word_len++; }
-write(1, word, word_len);
-char_print += word_len;
-}
-}
-else
-{write(1, format, 1);
-char_print++; }
-format++;
-}
-va_end(list_arg);
-return (char_print);
+	if (*buff_ind > 0)
+		write(1, &buffer[0], *buff_ind);
+
+	*buff_ind = 0;
 }
